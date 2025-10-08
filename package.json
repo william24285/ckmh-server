@@ -1,14 +1,15 @@
 {
   "name": "ckmh-server",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "description": "Realtime WebSocket server for CKMH project",
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Realtime WebSocket server for CKMH project",
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
