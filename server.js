@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   client_email: process.env.FIREBASE_CLIENT_EMAIL,
   client_id: process.env.FIREBASE_CLIENT_ID,
   auth_uri: process.env.FIREBASE_AUTH_URI,
@@ -30,14 +30,14 @@ app.get("/", (req, res) => {
 
 // Start HTTP server
 const server = app.listen(port, () => {
-  console.log(`HTTP server running on port ${port}`);
+  console.log(`✅ HTTP server running on port ${port}`);
 });
 
 // Start WebSocket server
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-  console.log("New client connected");
+  console.log("🟢 New client connected");
 
   // Example: send a message when a member is added
   const sendMemberAdded = (fullname) => {
@@ -50,6 +50,6 @@ wss.on("connection", (ws) => {
   }, 10000);
 
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log("🔴 Client disconnected");
   });
 });
