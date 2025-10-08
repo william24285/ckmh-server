@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "Realtime WebSocket server for CKMH project",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "firebase-admin": "^13.5.0",
     "ws": "^8.18.3"
