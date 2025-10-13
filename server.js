@@ -6,7 +6,7 @@ import 'dotenv/config';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ Validate environment variables
+// Validate required environment variables
 const requiredVars = [
   "FIREBASE_TYPE",
   "FIREBASE_PROJECT_ID",
@@ -26,7 +26,7 @@ requiredVars.forEach((key) => {
   }
 });
 
-// ✅ Initialize Firebase Admin
+// Initialize Firebase Admin
 const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
@@ -43,46 +43,61 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// ✅ Simple HTTP test route
+app.use(express.json());
+
+// Base endpoint
 app.get("/", (req, res) => {
-  res.send("✅ CKMH WebSocket JSON Server is running 🚀");
+  res.send("✅ CKMH WebSocket Notification Server is running in production mode 🚀");
 });
 
-// ✅ Start HTTP server
+// Create HTTP server
 const server = app.listen(port, () => {
   console.log(`🌍 HTTP server running on port ${port}`);
 });
 
-// ✅ Start WebSocket server
+// Create WebSocket server
 const wss = new WebSocketServer({ server });
-console.log("🔌 WebSocket server initialized");
 
+// Handle new connections
 wss.on("connection", (ws) => {
-  console.log("🟢 New client connected");
-
-  // Send JSON welcome message
-  ws.send(JSON.stringify({
-    type: "connection",
-    title: "🔌 Connected to CKMH Server",
-    body: "Welcome! You’ll now receive real-time notifications.",
-    timestamp: new Date().toISOString()
-  }));
-
-  // Example notification every 10 seconds
-  const interval = setInterval(() => {
-    const fullname = "Test Member " + Math.floor(Math.random() * 1000);
-    const message = {
-      type: "member_added",
-      title: "👤 New Member Joined",
-      body: `A new member named ${fullname} has joined.`,
-      timestamp: new Date().toISOString()
-    };
-    ws.send(JSON.stringify(message)); // ✅ Send as proper JSON
-    console.log("📤 Sent message:", message);
-  }, 10000);
+  console.log("🟢 New WebSocket client connected");
 
   ws.on("close", () => {
     console.log("🔴 Client disconnected");
-    clearInterval(interval);
+  });
+});
+
+console.log("✅ Production mode active — waiting for real JSON notifications...");
+
+// ✅ Endpoint to send notifications manually or via backend logic
+app.post("/send-notification", (req, res) => {
+  const { type, title, body } = req.body;
+
+  if (!title || !body) {
+    return res.status(400).json({
+      success: false,
+      message: "❌ Missing required fields: title or body"
+    });
+  }
+
+  const payload = {
+    type: type || "general",
+    title,
+    body,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Send JSON to all connected clients
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(payload));
+      console.log("📤 Sent message:", payload);
+    }
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "✅ Notification sent successfully",
+    payload
   });
 });
