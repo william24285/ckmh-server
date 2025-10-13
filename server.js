@@ -6,7 +6,7 @@ import 'dotenv/config';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Validate required environment variables
+// ✅ Validate environment variables
 const requiredVars = [
   "FIREBASE_TYPE",
   "FIREBASE_PROJECT_ID",
@@ -26,7 +26,7 @@ requiredVars.forEach((key) => {
   }
 });
 
-// Initialize Firebase Admin
+// ✅ Initialize Firebase Admin
 const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
@@ -43,32 +43,46 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// Sample endpoint
+// ✅ Simple HTTP test route
 app.get("/", (req, res) => {
-  res.send("CKMH WebSocket Server is running 🚀");
+  res.send("✅ CKMH WebSocket JSON Server is running 🚀");
 });
 
-// Start HTTP server
+// ✅ Start HTTP server
 const server = app.listen(port, () => {
-  console.log(`HTTP server running on port ${port}`);
+  console.log(`🌍 HTTP server running on port ${port}`);
 });
 
-// Start WebSocket server
+// ✅ Start WebSocket server
 const wss = new WebSocketServer({ server });
+console.log("🔌 WebSocket server initialized");
 
 wss.on("connection", (ws) => {
-  console.log("New client connected");
+  console.log("🟢 New client connected");
 
-  const sendMemberAdded = (fullname) => {
-    ws.send(`👤 New member joined: ${fullname}`);
-  };
+  // Send JSON welcome message
+  ws.send(JSON.stringify({
+    type: "connection",
+    title: "🔌 Connected to CKMH Server",
+    body: "Welcome! You’ll now receive real-time notifications.",
+    timestamp: new Date().toISOString()
+  }));
 
-  // Dummy data every 10s for testing
-  setInterval(() => {
-    sendMemberAdded("Test Member " + Math.floor(Math.random() * 1000));
+  // Example notification every 10 seconds
+  const interval = setInterval(() => {
+    const fullname = "Test Member " + Math.floor(Math.random() * 1000);
+    const message = {
+      type: "member_added",
+      title: "👤 New Member Joined",
+      body: `A new member named ${fullname} has joined.`,
+      timestamp: new Date().toISOString()
+    };
+    ws.send(JSON.stringify(message)); // ✅ Send as proper JSON
+    console.log("📤 Sent message:", message);
   }, 10000);
 
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log("🔴 Client disconnected");
+    clearInterval(interval);
   });
 });
