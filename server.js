@@ -1,12 +1,16 @@
 import express from "express";
 import { WebSocketServer } from "ws";
 import admin from "firebase-admin";
+import bodyParser from "body-parser";
 import 'dotenv/config';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Validate required environment variables
+// ✅ Parse JSON body
+app.use(bodyParser.json());
+
+// ✅ Validate environment variables
 const requiredVars = [
   "FIREBASE_TYPE",
   "FIREBASE_PROJECT_ID",
@@ -26,7 +30,7 @@ requiredVars.forEach((key) => {
   }
 });
 
-// Initialize Firebase Admin
+// ✅ Initialize Firebase Admin
 const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
@@ -43,61 +47,64 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-app.use(express.json());
-
-// Base endpoint
+// ✅ Sample HTTP endpoint
 app.get("/", (req, res) => {
-  res.send("✅ CKMH WebSocket Notification Server is running in production mode 🚀");
+  res.send("CKMH WebSocket Server is running 🚀");
 });
 
-// Create HTTP server
-const server = app.listen(port, () => {
-  console.log(`🌍 HTTP server running on port ${port}`);
-});
-
-// Create WebSocket server
-const wss = new WebSocketServer({ server });
-
-// Handle new connections
-wss.on("connection", (ws) => {
-  console.log("🟢 New WebSocket client connected");
-
-  ws.on("close", () => {
-    console.log("🔴 Client disconnected");
-  });
-});
-
-console.log("✅ Production mode active — waiting for real JSON notifications...");
-
-// ✅ Endpoint to send notifications manually or via backend logic
+// ✅ Endpoint to send notifications manually
 app.post("/send-notification", (req, res) => {
   const { type, title, body } = req.body;
 
   if (!title || !body) {
-    return res.status(400).json({
-      success: false,
-      message: "❌ Missing required fields: title or body"
-    });
+    return res.status(400).json({ error: "title and body are required" });
   }
 
-  const payload = {
+  const message = {
     type: type || "general",
     title,
     body,
     timestamp: new Date().toISOString(),
   };
 
-  // Send JSON to all connected clients
+  // Broadcast to all WebSocket clients
   wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify(payload));
-      console.log("📤 Sent message:", payload);
+    if (client.readyState === client.OPEN) {
+      client.send(JSON.stringify(message));
     }
   });
 
-  return res.status(200).json({
-    success: true,
-    message: "✅ Notification sent successfully",
-    payload
+  console.log("📤 Sent message:", message);
+  return res.status(200).json({ status: "sent", message });
+});
+
+// ✅ Start HTTP server
+const server = app.listen(port, () => {
+  console.log(`🌍 HTTP server running on port ${port}`);
+});
+
+// ✅ WebSocket server
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws) => {
+  console.log("🟢 New WebSocket client connected");
+
+  // ✅ Example: auto send new member every 10s for testing
+  const interval = setInterval(() => {
+    const newMemberName = "Test Member " + Math.floor(Math.random() * 1000);
+    const message = {
+      type: "member_added",
+      title: "👤 New Member Joined",
+      body: `A new member named ${newMemberName} has joined.`,
+      timestamp: new Date().toISOString(),
+    };
+
+    ws.send(JSON.stringify(message));
+    console.log("📤 Sent message:", message);
+  }, 10000);
+
+  ws.on("close", () => {
+    console.log("🔴 Client disconnected");
+    clearInterval(interval); // stop auto messages when client disconnects
   });
 });
